@@ -1,7 +1,24 @@
-异或性质
+
+异或
 1、0^a=a  a^a=0
 2、交换律a^b=b^a  
-不创建临时变量交换两个数
+不创建临时变量交换两个整数的值
 a=a^b
-b=a^b  (a^b^b=a^0=a)
-a=a^b  (a^b^a=b^0=b)
+b=a^b  (a^b^b=a)
+a=a^b  (a^b^a=b)
+
+eor          10011010
+~eor         01100101
+~eor+1       01100110
+eor&(~eor+1) 00000010
+得出最右位的1
+int rightOne=a&(~a+1);
+int onlyOne=0;//eor'
+for(int i=0;i<arr.size();i++)
+{
+if(ero&rightOne)!=0)
+    {
+      onlyOne^=arr[i];//a or b
+     }
+
+}
