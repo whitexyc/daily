@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地 WHEP 视频拉流测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        video { width: 80%; max-width: 800px; background-color: #000; display: block; margin-top: 15px; }
+        button { padding: 8px 15px; font-size: 14px; margin-right: 10px; }
+        .log { margin-top: 15px; padding: 10px; border: 1px solid #ccc; background: #f9f9f9; color: #333; font-family: monospace; height: 100px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h2>本地 WHEP 拉流测试 (Video Only)</h2>
+    <button id="playBtn" onclick="startPlay()">开始拉流</button>
+    <button id="stopBtn" onclick="stopPlay()" disabled>停止拉流</button>
+    <video id="videoPlayer" autoplay muted playsinline controls></video>
+    <div id="log" class="log">等待操作...</div>
+
+    <script>
+        const SRS_API_URL = 'https://10.168.89.202:1986/rtc/v1/whep/?app=live&stream=livestream';
+        let pc = null;
+        const v = document.getElementById('videoPlayer');
+        const logEl = document.getElementById('log');
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div>[${time}] ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        async function startPlay() {
+            document.getElementById('playBtn').disabled = true;
+            log('正在发起 WebRTC 连接...');
+
+            pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+            pc.ontrack = (event) => {
+                log('✅ 成功接收视频流！');
+                v.srcObject = event.streams[0];
+                v.play();
+                document.getElementById('stopBtn').disabled = false;
+            };
+
+            // 监听连接断开
+            pc.oniceconnectionstatechange = () => {
+                if (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed') {
+                    log('⚠️ 连接断开！');
+                    stopPlay();
+                }
+            };
+
+            try {
+                // 🌟 核心改动：强制只接收视频，不接收音频 (对应网页上的 Video Only)
+                const offer = await pc.createOffer({
+                    offerToReceiveAudio: false, 
+                    offerToReceiveVideo: true
+                });
+                await pc.setLocalDescription(offer);
+                log('发送 SDP Offer 给 SRS...');
+
+                const resp = await fetch(SRS_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/sdp' },
+                    body: offer.sdp
+                });
+
+                if (!resp.ok) throw new Error(`SRS 返回错误 ${resp.status}`);
+                const answerSdp = await resp.text();
+                await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
+                log('✅ 握手成功，等待画面加载...');
+
+            } catch (e) {
+                log('❌ 拉流失败: ' + e.message);
+                stopPlay();
+            }
+        }
+
+        function stopPlay() {
+            if (pc) { pc.close(); pc = null; }
+            v.srcObject = null;
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            log('🛑 已停止');
+        }
+    </script>
+</body>
+</html>

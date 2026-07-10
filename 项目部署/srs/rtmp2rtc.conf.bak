@@ -1,0 +1,55 @@
+# ============================================================================
+# SRS (Simple Realtime Server) 配置文件
+# 功能：RTMP 推流 -> WebRTC 播放（支持 HTTPS）
+# 内网 IP：10.168.89.202
+# ============================================================================
+
+# ==================== 全局基本设置 ====================
+listen              1935;           # RTMP 推流端口（OBS/FFmpeg 推流用）
+max_connections     1000;           # 最大并发连接数
+daemon              off;            # 以前台方式运行（Docker 中必须为 off）
+srs_log_tank        console;        # 日志输出到控制台（便于 Docker 日志查看）
+
+# ==================== HTTP API（提供管理接口） ====================
+http_api {
+    enabled         on;             # 开启 HTTP API
+    listen          1985;           # HTTP API 端口（用于获取统计、控制等）
+
+}
+
+# ==================== HTTP 静态服务器（提供 Web 测试页面，支持 HTTPS） ====================
+http_server {
+    enabled         on;             # 开启 HTTP 服务
+    listen          8080;           # HTTP 端口（访问测试页面）
+    # 新增 HTTPS 端口
+    listen          8088 ssl;       # HTTPS 端口（浏览器访问）
+    # 证书路径（同 API）
+    ssl_certificate /usr/local/srs/conf/ssl/server.crt;
+    ssl_certificate_key /usr/local/srs/conf/ssl/server.key;
+    dir             ./objs/nginx/html; # 网页文件目录（SRS 自带播放器页面）
+}
+
+# ==================== WebRTC 服务器配置（核心） ====================
+rtc_server {
+    enabled         on;             # 开启 WebRTC 功能
+    listen          8000;           # WebRTC 媒体传输的 UDP 端口
+    # 指定公网/内网 IP 地址（客户端通过此 IP 连接）
+    # 由于你是内网环境，直接写死 IP 10.168.89.202
+    candidate       10.168.89.202;  
+    # 协议：UDP（默认），若需 TCP 回退可配置 tcp 块
+    protocol        udp;            
+    # 可选：STUN/TURN 服务器（复杂网络环境需要）
+    # stun_server { enabled on; server stun.l.google.com:19302; }
+}
+
+# ==================== 虚拟主机配置（开启 RTMP 转 WebRTC） ====================
+vhost __defaultVhost__ {
+    rtc {
+        enabled     on;             # 为该虚拟主机开启 RTC 支持
+        rtmp_to_rtc on;             # 【关键】开启 RTMP 到 WebRTC 的转换
+        rtc_to_rtmp off;            # 关闭 RTC 到 RTMP（本例不需要）
+        # 以下为可选高级参数，默认已开启，可按需调整
+        nack        on;             # 开启 NACK（丢包重传）
+        twcc        on;             # 开启 TWCC（拥塞控制）
+    }
+}

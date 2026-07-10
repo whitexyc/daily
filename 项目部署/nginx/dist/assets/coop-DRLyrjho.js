@@ -1,0 +1,1 @@
+import{z as e}from"./index-DRdRF65L.js";function n(o){return e.get("/chicken-coop",{params:o})}function p(o){return e.post("/chicken-coop",o)}function r(o,t){return e.put(`/chicken-coop/${o}`,t)}function u(o){return e.delete(`/chicken-coop/${o}`)}export{p as c,u as d,n as g,r as u};

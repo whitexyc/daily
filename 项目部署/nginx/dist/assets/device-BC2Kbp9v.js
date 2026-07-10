@@ -1,0 +1,1 @@
+import{z as t}from"./index-DRdRF65L.js";function c(e){return t.get("/device/list",{params:e})}function n(e){return t.get(`/device/${e}`)}function r(e){return t.post("/device",e)}function s(e){return t.delete(`/device/${e}`)}function u(){return t.get("/device/stats")}export{u as a,n as b,r as c,s as d,c as g};

@@ -1,0 +1,173 @@
+# ==================== 服务器配置 ====================
+server:
+  # 应用服务端口号
+  port: 8080
+  servlet:
+    # 应用上下文路径，所有接口将以 /api 开头
+    context-path: /api
+  # Tomcat 连接池配置
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+    max-connections: 8192
+    accept-count: 100
+
+# ==================== Spring 核心配置 ====================
+spring:
+  application:
+    name: qcyz
+  profiles:
+    active: dev
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  # ==================== 数据源配置 (PostgreSQL) ====================
+  datasource:
+    url: jdbc:postgresql://10.168.89.202:5432/qcyz?currentSchema=qcyz
+    username: postgres
+    password: qcyz
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  # ==================== Redis 缓存配置 ====================
+  data:
+    redis:
+      host: 10.168.89.202
+      port: 6379
+      password: qcyz
+      database: 0
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: 5000
+          max-idle: 8
+          min-idle: 0
+
+  # ==================== 邮件服务配置 ====================
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: 1420632369@qq.com
+    password: yvqavswhukjwhbhd
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # ==================== 文件上传配置 ====================
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+
+  # ==================== 异步任务配置 ====================
+  task:
+    execution:
+      pool:
+        core-size: 8
+        max-size: 16
+        queue-capacity: 100
+      thread-name-prefix: async-task-
+
+# ==================== Actuator 应用监控 ====================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# ==================== MyBatis-Plus 配置 ====================
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.tianma.qcyz.entity
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# ==================== Knife4j API文档配置 ====================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: default
+      paths-to-match: /**
+      packages-to-scan: com.tianma.qcyz.controller
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# ==================== MinIO 对象存储配置 ====================
+minio:
+  endpoint: http://10.168.89.202:9000
+  access-key: admin
+  secret-key: admin@123
+  bucket-name: qcyz
+
+# ==================== JWT 认证配置 ====================
+jwt:
+  secret: qcyz-jwt-secret-xyc-lwg-ycy-team
+  expiration: 86400000
+  header: Authorization
+  prefix: "Bearer "
+
+# ==================== RAG 知识库配置 ====================
+rag:
+  embedding-model: local:bge-small-zh-v1.5
+  vector-dimension: 512
+  chunk-size: 1000
+  chunk-overlap: 200
+  retrieve-max-results: 5
+  retrieve-min-score: 0.6
+  llm:
+    api-key: ${DEEPSEEK_API_KEY:YOUR_DEEPSEEK_API_KEY}
+    base-url: https://api.deepseek.com
+    model-name: deepseek-v4-flash
+    temperature: 0.7
+    max-tokens: 2000
+  chat-memory:
+    max-messages: 20
+
+# ==================== 华为云 IoTDA 配置 ====================
+iotda:
+  endpoint: 170f34ff8d.st1.iotda-app.cn-east-3.myhuaweicloud.com
+  port: 5671
+  access-key: EZu6VtOo
+  access-code: Rr29H09QWcryumeFIQW9hFYMkhDPBDIt
+  queue-name: DefaultQueue
+  mock-enabled: false
+
+# ==================== 日志配置 ====================
+logging:
+  level:
+    root: INFO
+    com.tianma.qcyz: DEBUG
+    org.springframework.security: DEBUG
+    com.tianma.qcyz.mapper: DEBUG
+    org.apache.ibatis: DEBUG

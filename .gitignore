@@ -1,0 +1,28 @@
+# 大文件
+*.zip
+*.rar
+*.7z
+
+# 系统文件
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+~$*
+
+# 临时文件
+*.tmp
+*.log
+
+# AI 工具配置
+.reasonix/
+
+# Large build artifacts / dependencies
+*.jar
+*.tar.gz

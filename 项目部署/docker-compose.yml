@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # ========== Java 后端（JDK 21） ==========
+  java-backend:
+    build:
+      context: ./java
+      dockerfile: Dockerfile
+    container_name: java-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # 挂载配置文件（如果内置在镜像中则可省略）
+      - ./java/application.yml:/data/java/application.yml:ro
+      # 挂载日志目录（如果有）
+      - ./java/logs:/data/java/logs
+    networks:
+      - chicken-net
+    restart: unless-stopped
+  # ========== nginx 前端 ==========
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"                     # 新增 HTTPS 端口
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      # 挂载证书目录（只读）
+      - ./nginx/certs:/etc/nginx/certs:ro
+      # 如需动态更新前端或 nginx 配置，可取消下面注释
+      # - ./nginx/dist:/usr/share/nginx/html/dist:ro
+      # - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - chicken-net
+    depends_on:
+      - java-backend
+    restart: unless-stopped
+
+  # ========== YOLO 微服务（长连接） ==========
+  python-yolo:
+    build:
+      context: ./python-yolo
+      dockerfile: Dockerfile
+    container_name: python-yolo
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_BACKEND_URL=http://java-backend:8080
+      - MINIO_ENDPOINT=10.168.89.202:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=admin@123
+      - FLV_URL=http://10.168.89.202:8001/live/stream.flv   # 根据实际修改
+    volumes:
+      # 将容器内的 /data/yolo/predict_chicken 挂载到宿主机 ./data/python-yolo/yolo_predict
+      - ./python-yolo/yolo_predict:/data/yolo/predict_chicken
+    networks:
+      - chicken-net
+    depends_on:
+      - java-backend
+
+  # ========== XGB 微服务（定时） ==========
+  python-xgb:
+    build:
+      context: ./python-xgb
+      dockerfile: Dockerfile
+    container_name: python-xgb
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_BACKEND_URL=http://java-backend:8080
+      - MINIO_ENDPOINT=10.168.89.202:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=admin@123
+      # 可覆盖预测间隔（单位秒），如果脚本支持
+      # - PREDICT_INTERVAL=60
+    volumes:
+      # 结果目录持久化
+      - ./python-xgb/xgb_predict:/data/xgb/predict_results
+    networks:
+      - chicken-net
+    depends_on:
+      - java-backend
+
+networks:
+  chicken-net:
+    driver: bridge
